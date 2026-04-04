@@ -1,0 +1,38 @@
+version: "1.0"
+name: "cloud_job_scheduler"
+description: "Dynamic Cloud Job Scheduler environment for resource-constrained job scheduling with priorities, deadlines, and dependencies"
+author: "OpenEnv Hackathon"
+license: "MIT"
+
+environment:
+  type: "simulator"
+  entrypoint: "env:CloudJobSchedulerEnv"
+  
+tasks:
+  - id: "schedule_static_batch"
+    name: "Static Batch Job Scheduling"
+    description: "Schedule a static batch of 10 independent jobs within cluster capacity and deadlines"
+    difficulty: "easy"
+    grader: "tasks:grade_static_batch"
+    
+  - id: "schedule_with_priorities"
+    name: "Priority-Aware Job Scheduling"
+    description: "Schedule mixed priority jobs (low/medium/high) and optimize for SLA compliance"
+    difficulty: "medium"
+    grader: "tasks:grade_priority_scheduling"
+    
+  - id: "schedule_with_dependencies"
+    name: "Dynamic Scheduling with Dependencies"
+    description: "Handle dynamic job arrivals and job dependencies (Job B cannot start until Job A finishes)"
+    difficulty: "hard"
+    grader: "tasks:grade_dynamic_dependencies"
+
+evaluation:
+  metrics:
+    - "sla_compliance"
+    - "resource_efficiency"
+    - "makespan"
+    - "priority_weighted_score"
+  
+  max_episode_steps: 1000
+  time_limit: 300
