@@ -219,6 +219,8 @@ class CloudJobSchedulerEnv:
                     priority_bonus: float = 0.0
                     if job.priority == JobPriority.HIGH:
                         priority_bonus = 0.2
+                    elif job.priority == JobPriority.ELEVATED:
+                        priority_bonus = 0.15
                     elif job.priority == JobPriority.MEDIUM:
                         priority_bonus = 0.1
                     

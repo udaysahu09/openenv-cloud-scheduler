@@ -54,7 +54,7 @@ This environment provides a **realistic simulation** where AI agents act as clus
       "required_cpu": float,
       "required_ram": float,
       "duration": int,           # Time steps to complete
-      "priority": "high" | "medium" | "low",
+      "priority": "high" | "elevated" | "medium" | "low",
       "deadline": int,           # Absolute deadline (time step)
       "dependencies": [str],     # Job IDs that must complete first
       "arrival_time": int        # When job enters the system
@@ -106,7 +106,7 @@ Advance simulation time by 1 timestep.
 - Pending jobs exceeding their `deadline` are marked failed
 
 **Reward:**
-- +0.5 per job completion (base) + priority bonus (+0.1 to +0.2)
+- +0.5 per job completion (base) + priority bonus (+0.1 for medium, +0.15 for elevated, +0.2 for high)
 - -1.0 per missed deadline (SLA breach)
 - +0.05 if no jobs completed (progress reward)
 

@@ -5,6 +5,7 @@ from enum import Enum
 class JobPriority(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
+    ELEVATED = "elevated"
     HIGH = "high"
 
 class Job(BaseModel):
