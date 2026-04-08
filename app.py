@@ -1,7 +1,64 @@
 import gradio as gr
 import time
 import datetime
+from flask import Flask, jsonify, request
+from threading import Thread
+from env import CloudJobSchedulerEnv
+import os
 
+# Initialize Flask app
+app = Flask(__name__)
+
+# Global environment instance
+current_env = None
+
+# Flask Routes (for grader)
+@app.route('/openenv/reset', methods=['POST'])
+def reset():
+    """Reset the job scheduling environment"""
+    global current_env
+    try:
+        task_id = os.getenv("TASK_ID", "schedule_static_batch")
+        current_env = CloudJobSchedulerEnv(task_id=task_id)
+        obs = current_env.reset()
+        
+        return jsonify({
+            "status": "success",
+            "message": "Environment reset successfully",
+            "observation": str(obs)
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/openenv/step', methods=['POST'])
+def step():
+    """Execute one step in the environment"""
+    global current_env
+    try:
+        action = request.json.get('action', 'wait()')
+        obs, reward, done, info = current_env.step(action)
+        
+        return jsonify({
+            "status": "success",
+            "reward": reward.value,
+            "done": done,
+            "info": info
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({"status": "ok"}), 200
+
+# Gradio UI Functions
 def run_cloud_job(job_name, job_type, priority, progress=gr.Progress()):
     if not job_name:
         return "Error: Please provide a Job Name."
@@ -28,14 +85,14 @@ def run_cloud_job(job_name, job_type, priority, progress=gr.Progress()):
     # Generate the final log output
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log = f"✅ [{timestamp}] SUCCESS: Job completed!\n"
-    log += f"➔ Job Name: {job_name}\n"
-    log += f"➔ Task Type: {job_type}\n"
-    log += f"➔ Priority Level: {priority}\n"
-    log += "➔ Status: All tasks executed successfully on Openenv Cloud."
+    log += f"➜ Job Name: {job_name}\n"
+    log += f"➜ Task Type: {job_type}\n"
+    log += f"➜ Priority Level: {priority}\n"
+    log += "➜ Status: All tasks executed successfully on Openenv Cloud."
     
     return log
 
-# Create a professional-looking dashboard interface
+# Create Gradio UI
 with gr.Blocks(theme=gr.themes.Soft()) as demo:
     gr.Markdown("# ☁️ Openenv Cloud Job Scheduler")
     gr.Markdown("Submit a task to be executed on the cloud environment. Monitor the progress in real-time.")
@@ -67,5 +124,8 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         outputs=output_log
     )
 
+# Mount Gradio app on Flask
+gr.mount_gradio_app(app, demo, path="/")
+
 if __name__ == "__main__":
-    demo.launch()
+    app.run(host='0.0.0.0', port=7860, debug=False)
