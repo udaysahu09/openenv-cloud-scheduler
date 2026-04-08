@@ -1,2 +1,3 @@
-﻿gradio
-flask==2.3.0
+gradio
+fastapi
+uvicorn

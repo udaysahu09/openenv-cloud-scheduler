@@ -1,20 +1,20 @@
-import gradio as gr
 import time
 import datetime
-from flask import Flask, jsonify, request
-from threading import Thread
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+import gradio as gr
 from env import CloudJobSchedulerEnv
 import os
 
-# Initialize Flask app
-app = Flask(__name__)
+# Initialize FastAPI app
+app = FastAPI()
 
 # Global environment instance
 current_env = None
 
-# Flask Routes (for grader)
-@app.route('/openenv/reset', methods=['POST'])
-def reset():
+# FastAPI Routes (for grader)
+@app.post('/openenv/reset')
+async def reset():
     """Reset the job scheduling environment"""
     global current_env
     try:
@@ -22,41 +22,42 @@ def reset():
         current_env = CloudJobSchedulerEnv(task_id=task_id)
         obs = current_env.reset()
         
-        return jsonify({
+        return {
             "status": "success",
             "message": "Environment reset successfully",
             "observation": str(obs)
-        }), 200
+        }
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
 
-@app.route('/openenv/step', methods=['POST'])
-def step():
+@app.post('/openenv/step')
+async def step(request: Request):
     """Execute one step in the environment"""
     global current_env
     try:
-        action = request.json.get('action', 'wait()')
+        data = await request.json()
+        action = data.get('action', 'wait()')
         obs, reward, done, info = current_env.step(action)
         
-        return jsonify({
+        return {
             "status": "success",
             "reward": reward.value,
             "done": done,
             "info": info
-        }), 200
+        }
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
 
-@app.route('/health', methods=['GET'])
-def health():
+@app.get('/health')
+async def health():
     """Health check endpoint"""
-    return jsonify({"status": "ok"}), 200
+    return {"status": "ok"}
 
 # Gradio UI Functions
 def run_cloud_job(job_name, job_type, priority, progress=gr.Progress()):
@@ -93,7 +94,7 @@ def run_cloud_job(job_name, job_type, priority, progress=gr.Progress()):
     return log
 
 # Create Gradio UI
-with gr.Blocks(theme=gr.themes.Soft()) as demo:
+with gr.Blocks() as demo:
     gr.Markdown("# ☁️ Openenv Cloud Job Scheduler")
     gr.Markdown("Submit a task to be executed on the cloud environment. Monitor the progress in real-time.")
     
@@ -124,8 +125,9 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         outputs=output_log
     )
 
-# Mount Gradio app on Flask
+# Mount Gradio app on FastAPI
 gr.mount_gradio_app(app, demo, path="/")
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=7860, debug=False)
+    import uvicorn
+    uvicorn.run(app, host='0.0.0.0', port=7860)
