@@ -9,9 +9,29 @@ app = FastAPI()
 # Global environment instance
 current_env = None
 
-@app.post('/openenv/reset')
+@app.post('/reset')
 async def reset():
     """Reset the job scheduling environment - POST endpoint"""
+    global current_env
+    try:
+        task_id = os.getenv("TASK_ID", "schedule_static_batch")
+        current_env = CloudJobSchedulerEnv(task_id=task_id)
+        obs = current_env.reset()
+        
+        return {
+            "status": "success",
+            "message": "Environment reset successfully",
+            "observation": str(obs)
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+@app.post('/openenv/reset')
+async def openenv_reset():
+    """Reset the job scheduling environment - OpenEnv endpoint"""
     global current_env
     try:
         task_id = os.getenv("TASK_ID", "schedule_static_batch")
